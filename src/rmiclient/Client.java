@@ -17,7 +17,7 @@ public class Client{
         try{
         Registry reg= LocateRegistry.getRegistry(1099); //Cambiar si no es localhost
         Hello replyobj=(Hello)reg.lookup("MyServer"); //El nombre del servidor del tablón de anuncios, devuelve un Hello por el método que buscamos en el Server
-        String reply=replyobj.say_hi();
+        String reply=replyobj.play("abcde");
         System.out.println("I have obtained a reply: "+reply);
         }catch(NotBoundException nbe){
             System.out.println("Server does not exist");
