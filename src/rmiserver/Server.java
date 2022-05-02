@@ -1,60 +1,40 @@
 package rmiserver;
 import java.net.MalformedURLException;
-import rmiinterface.Hello;
-
-import java.rmi.RemoteException;
+import java.nio.charset.MalformedInputException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
-import java.rmi.server.UnicastRemoteObject;
-import java.rmi.registry.Registry;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.net.MalformedURLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
+import rmiinterface.Hello;
 
-/**
- *
- * @author Juan Yuri Díaz Sánchez
- */
 public class Server implements Hello{
 
-    public Server(){
-        //this.server = null;
+    @Override
+    public String say_hi() throws RemoteException{
+        return "Hi Client!!!";
     }
     
-    public static void main(String[] args){ // para poder arrancarlo
-        Server server = new Server();
-        //java.rmi.server.logCalls=true;
-        
+    public static void main(String[] args) {
+        Server srv= new Server(); //Creamos el servidor con el que nos comunicaremos
         try{
-            // parte visible
-            Hello stub = (Hello) UnicastRemoteObject.exportObject(server,0); // que esté asociado a Hello extends Remote
-            
-            // publicar nuestro servidor en el registry. Localizar tablon de anuncios con registry
-            //Registry registro = LocateRegistry.getRegistry(1099); // 1099 a buscarlo si no es local getRegistry(host, port);
-            
-            //registro.bind("MundoFeliz",stub); // bind: vincular, asociar
-            // server no es una referencia remota, ccon stub decimos como llegar a la parte abierta del servidor
-            
-            Naming.bind("//localhost:1099/MundoFeliz", stub);
-            
-            System.out.println("Servidor listo.");
+        Hello stub=(Hello)UnicastRemoteObject.exportObject(srv, 0); //Generamos la referencia remote de la parte del servidor que queremos que se use por remoto, puerto 0 es el puerto por defecto, que es el 1099, necesitamos el say_hi (dado por Hello)
+        //Hay que "publicar" el servidor java.rmi.registry
+        Registry reg=LocateRegistry.getRegistry(); //Creamos el registro para que use, en este modo localhost con puerto 1099, cambiar si se necesita conectar a otra máquina
+        //Usamos bind pero también podemos usar rebind
+        reg.bind("MyServer",stub); //Vincula o asocia un nombre creado para cada cliente al stub, estamos diciendo como llegará un cliente a nuestro método libre para el público
         
-        }catch(RemoteException e){ // problemas de 
-            System.out.println("Host unreachable. Failed communication." + e);
+        //Segunda forma
+        //Naming.bind("//localhost:1099/MyServer",stub);
+        System.out.println("Server ready");
         }catch(AlreadyBoundException abe){
-            System.out.println("AlreadyBound Exception: " + abe);
-        }// catch (MalformedURLException ex) {
-           // System.out.println("AlreadyBound Exception: " + ex);
-        catch(Exception ex2){
-            System.err.println(ex2.getMessage());
-        }  
-        
-    }
-    
-    
-    public String say_hi() throws RemoteException {
-        return "hello World";
+            System.out.println("Server Name already at board"); //Ya existe ese nombre en el "tablón de anuncios"
+        }catch(RemoteException re){
+            System.out.println("Host unreachable"); //La comunicación ha fallado
+        }//catch(MalformedURLException mue){
+         //   System.out.println("Unknown URL"); //La comunicación ha fallado
+         //}
     }
 }
