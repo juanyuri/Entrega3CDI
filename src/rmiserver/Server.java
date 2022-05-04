@@ -62,7 +62,7 @@ public class Server extends UnicastRemoteObject implements Wordle {
             e.printStackTrace();
         }
         showMessage("Se ha asociado la palabra "+palabraCorrespondeJugador.get(nombre)+" al jugador "+nombre);
-        return "De acuerdo "+nombre+" puedes empezar a jugar";
+        return "De acuerdo, "+nombre+" puedes empezar a jugar";
     }
 
     public String play(String nombre, String intento) throws RemoteException{

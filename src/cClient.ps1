@@ -1,0 +1,1 @@
+Invoke-Expression -Command "javac rmiclient/*.java"
