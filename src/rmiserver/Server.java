@@ -42,8 +42,17 @@ public class Server extends UnicastRemoteObject implements Wordle {
         letrasAbecedario= new char[]{'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
     }
 
+    public void resetPart(String nombre){
+        jugadoresActuales.remove(nombre); //Eliminamos el registro del jugador
+        palabraCorrespondeJugador.remove(nombre); //Eliminamos alguna palabra que quede suelta
+        if(numeroJugadores!=0){
+            numeroJugadores--;
+        }
+        System.out.println("He eliminado la información del jugador "+nombre);
+    }
     @Override
     public String iniciarPartida(String nombre) throws RemoteException{
+        resetPart(nombre); //Reseteamos posible informacion sobre el jugador que acaba de entrar
         try {
             jugadoresActuales.put(nombre,getClientHost());
             palabraCorrespondeJugador.put(nombre,posiblesPropuestas[(int)(Math.random()*(capacidadVector-1)+1)]); //Escoge una palabra y la asocia al jugador
@@ -75,6 +84,12 @@ public class Server extends UnicastRemoteObject implements Wordle {
             }else{ // si la propuesta no está en la palabra
                 resultado.append("G");
             }
+        }
+
+        if(resultado.toString().equals("VVVVV")){ //Ha ganado
+            showRequest(nombre, nombre+" ha ganado");
+        }else{
+            showRequest(nombre, nombre+" ha perdido");
         }
        
         return resultado.toString();
@@ -117,5 +132,11 @@ public class Server extends UnicastRemoteObject implements Wordle {
         }catch(RemoteException re){
             System.out.println("Host unreachable");
         }
+    }
+
+    @Override
+    public String noJuega(String name) throws RemoteException {
+        showMessage("El jugador "+name+" no quiere seguir jugando");
+        return "De acuerdo";
     }
 }
