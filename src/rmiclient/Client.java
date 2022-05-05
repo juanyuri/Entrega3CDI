@@ -18,10 +18,6 @@ public class Client{
         this.numIntentos = 0;
     }
 
-    /* public String getNombre(){
-        return this.nombre;
-    } */
-
     /** Método que permite mostrar la respuesta del server */
     private void showReply(String reply) {
         System.out.println("(Server) " + reply);
@@ -46,9 +42,6 @@ public class Client{
         try {
             Registry reg = LocateRegistry.getRegistry(1099);
             Wordle objetoRemoto = (Wordle) reg.lookup("MyServer");
-
-            //reply = replyobj.iniciarPartida(nombre);
-            //showReply(reply);
 
             seleccionOpcion(objetoRemoto);
 
@@ -81,7 +74,7 @@ public class Client{
             switch(op) {
                 case 1:
                     System.out.println("\n---------------------------------");
-                    cliente.bucleIntentosPalabras();
+                    cliente.bucleIntentosPalabras(objetoRemoto);
                     break;
             }
             
@@ -121,7 +114,7 @@ public class Client{
 
 
     /* Funcion en la que se realizaran los distintos intentos de palabras */
-    private void bucleIntentosPalabras(){
+    private void bucleIntentosPalabras(Wordle objetoRemoto){
         numIntentos = 0;
 
         while(numIntentos < 6){
@@ -130,6 +123,13 @@ public class Client{
             do{
                 palabra = leerCadena("Ingrese nueva palabra (5 letras): ");
             }while(palabra.length() != 5);
+
+            try{
+               String response = objetoRemoto.play(nombre,palabra);
+               System.out.println(response);
+            }catch(RemoteException re){
+                System.out.println("Error remoto.");
+            }
 
             StringBuilder toret = new StringBuilder();
             toret.append("Intentos: ").append(++numIntentos);

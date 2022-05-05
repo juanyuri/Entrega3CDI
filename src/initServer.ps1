@@ -1,4 +1,3 @@
-Invoke-Expression -Command ".\c.ps1"
 Invoke-Expression -Command "start rmiregistry"
-Start-Sleep -s 4
+Start-Sleep -s 5
 Invoke-Expression -Command "java rmiserver/Server MyServer"
