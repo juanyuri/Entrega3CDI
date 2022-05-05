@@ -4,7 +4,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Scanner;
 
 import static rmiclient.ES.*;
 import rmiinterface.Wordle;
@@ -81,12 +80,7 @@ public class Client{
         int op;
         String nombreCliente = leerCadena("Introduce nombre jugador: ");
         Client cliente = new Client(nombreCliente);
-        try {
-            String reply = objetoRemoto.iniciarPartida(nombreCliente); // jugador recibe puedes comenzar a jugar
-            System.out.println("(Server) " + reply);
-        }catch(RemoteException ex){
-            System.out.println("Host unreachable.");
-        }
+        
 
         // BUCLE PRINCIPAL
         do {
@@ -94,6 +88,12 @@ public class Client{
             
             switch(op) {
                 case 1:
+                    try {
+                        String reply = objetoRemoto.iniciarPartida(nombreCliente); // jugador recibe puedes comenzar a jugar
+                        System.out.println("(Server) " + reply);
+                    }catch(RemoteException ex){
+                        System.out.println("Host unreachable.");
+                }
                     System.out.println("\n---------------------------------");
                     cliente.bucleIntentosPalabras(objetoRemoto);
                     break;

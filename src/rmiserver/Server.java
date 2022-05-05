@@ -10,133 +10,175 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import rmiinterface.Wordle;
 
-public class Server extends UnicastRemoteObject implements Wordle {
-    
+public class Server extends UnicastRemoteObject implements Wordle, Runnable {
+
     String nombreServidor;
     int numeroJugadores;
 
-    String palabraPropuesta;
+    String palabraPropuesta; //Palabra que tienen en cada momento
     String palabraIntento;
     String posiblesPropuestas[];
-    Map<String,String> jugadoresActuales;
+    Map<String, String> jugadoresActuales; //Nombre e IP
     int capacidadVector;
     ArrayList<String> palabrasProhibidas;
     char[] letrasAbecedario;
-    static Map<Character,List<String>> mapaPalabrasPosibles;
-    static Map<String,String> palabraCorrespondeJugador;
+    static Map<Character, List<String>> mapaPalabrasPosibles;
+    static Map<String, String> palabraCorrespondeJugador; //Nombre y Palabra
 
-    public Server(String nombreServidor) throws RemoteException{
-        this.nombreServidor=nombreServidor;
-        this.numeroJugadores=0;
-        this.capacidadVector=20;
-        this.posiblesPropuestas= new String[]{"HOJAS","CASAS","RELAX","ACOTA","AGUDO","GRAVE",
-                                              "SOLAR","SALIR","ABETO","MATES","MATON","LUNES",
-                                              "AGUAS","ODIAR","COMER","BEBER","FUMAR","FUTIL",
-                                              "PERRO","GATOS","LOROS","CACOS","CAJON","TORTA"};
-        this.palabrasProhibidas= new ArrayList<String>(capacidadVector);
-        jugadoresActuales= new HashMap<>();
-        palabraCorrespondeJugador= new HashMap<>();
-        letrasAbecedario= new char[]{'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
+    public Server(String nombreServidor) throws RemoteException {
+        this.nombreServidor = nombreServidor;
+        this.numeroJugadores = 0;
+        this.capacidadVector = 20;
+        this.posiblesPropuestas = new String[] { "HOJAS", "CASAS", "RELAX", "ACOTA", "AGUDO", "GRAVE",
+                "SOLAR", "SALIR", "ABETO", "MATES", "MATON", "LUNES",
+                "AGUAS", "ODIAR", "COMER", "BEBER", "FUMAR", "FUTIL",
+                "PERRO", "GATOS", "LOROS", "CACOS", "CAJON", "TORTA" };
+        this.palabraPropuesta = posiblesPropuestas[(int) (Math.random() * (capacidadVector - 1) + 1)]; // Crea una palabra para todos
+        this.palabrasProhibidas = new ArrayList<String>(capacidadVector);
+        palabrasProhibidas.add(palabraPropuesta);
+        jugadoresActuales = new HashMap<>();
+        palabraCorrespondeJugador = new HashMap<>();
+        letrasAbecedario = new char[] { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
     }
 
-    public void resetPart(String nombre){
-        jugadoresActuales.remove(nombre); //Eliminamos el registro del jugador
-        palabraCorrespondeJugador.remove(nombre); //Eliminamos alguna palabra que quede suelta
-        if(numeroJugadores!=0){
+    @Override
+    public void run() { // Hilo que cambia la palabra
+        System.out.println("la palabra actual es"+palabraPropuesta);
+        while (true) {
+            try {
+                Thread.sleep(15000); // Duerme 5 minutos 300000
+                System.out.println("Me he despertado");
+                palabraPropuesta = posiblesPropuestas[(int) (Math.random() * (capacidadVector - 1) + 1)]; // Crea nueva palabra
+                if (palabrasProhibidas.contains(palabraPropuesta)) {
+                    palabraPropuesta = posiblesPropuestas[(int) (Math.random() * (capacidadVector - 1) + 1)]; // Crea nueva palabra si ya está en la de prohibidas
+                } else {
+                    palabrasProhibidas.add(palabraPropuesta); // Sino la añade a la lista de prohibidas
+                }
+                System.out.println("La nueva palabra es " + palabraPropuesta);
+                System.out.println("Lista prohibidas"+palabrasProhibidas);
+                
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void resetPart(String nombre) {
+        jugadoresActuales.remove(nombre); // Eliminamos el registro del jugador
+        palabraCorrespondeJugador.remove(nombre); // Eliminamos alguna palabra que quede suelta
+        if (numeroJugadores != 0) {
             numeroJugadores--;
         }
-        System.out.println("He eliminado la información del jugador "+nombre);
+        System.out.println("He eliminado la información del jugador " + nombre);
     }
+
     @Override
-    public String iniciarPartida(String nombre) throws RemoteException{
-        resetPart(nombre); //Reseteamos posible informacion sobre el jugador que acaba de entrar
+    public String iniciarPartida(String nombre) throws RemoteException {
+        resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
         try {
-            jugadoresActuales.put(nombre,getClientHost());
-            palabraCorrespondeJugador.put(nombre,posiblesPropuestas[(int)(Math.random()*(capacidadVector-1)+1)]); //Escoge una palabra y la asocia al jugador
+            jugadoresActuales.put(nombre, getClientHost());
+            palabraCorrespondeJugador.put(nombre, palabraPropuesta); // Escoge una palabra y la asocia al jugador
             numeroJugadores++;
 
         } catch (ServerNotActiveException e) {
             e.printStackTrace();
         }
-        showMessage("Se ha asociado la palabra "+palabraCorrespondeJugador.get(nombre)+" al jugador "+nombre);
-        return "De acuerdo, "+nombre+" puedes empezar a jugar";
+        showMessage("Se ha asociado la palabra " + palabraCorrespondeJugador.get(nombre) + " al jugador " + nombre);
+        return "De acuerdo, " + nombre + " puedes empezar a jugar";
     }
 
-    public String play(String nombre, String intento) throws RemoteException{
+    public String play(String nombre, String intento) throws RemoteException {
         String peticion = "intento jugar con " + intento;
         intento = intento.toUpperCase();
-        String palabraCorrespondiente= palabraCorrespondeJugador.get(nombre).toUpperCase();
-        showRequest(nombre,peticion);
-
+        String palabraCorrespondiente = palabraCorrespondeJugador.get(nombre).toUpperCase();
+        showRequest(nombre, peticion);
 
         StringBuilder resultado = new StringBuilder();
         char[] intentoVector = intento.toCharArray();
         char[] propuestaVector = palabraCorrespondiente.toCharArray(); // suponemos minuscula
 
-        for(int i = 0; i< intentoVector.length; i++){
-            if(intentoVector[i] == propuestaVector[i]){ // Si están en la misma posición
+        for (int i = 0; i < intentoVector.length; i++) {
+            if (intentoVector[i] == propuestaVector[i]) { // Si están en la misma posición
                 resultado.append("V");
-            }else if(contiene(propuestaVector,intentoVector[i])){ // si la propuesta no está en la misma posición, pero si en otra
+            } else if (contiene(propuestaVector, intentoVector[i])) { // si la propuesta no está en la misma posición,
+                                                                      // pero si en otra
                 resultado.append("A");
-            }else{ // si la propuesta no está en la palabra
+            } else { // si la propuesta no está en la palabra
                 resultado.append("G");
             }
         }
 
-        if(resultado.toString().equals("VVVVV")){ //Ha ganado
-            showRequest(nombre, nombre+" ha ganado");
-        }else{
-            showRequest(nombre, nombre+" ha perdido");
+        if (resultado.toString().equals("VVVVV")) { // Ha ganado
+            showRequest(nombre, nombre + " ha ganado");
+            palabraCorrespondeJugador.put(nombre, null); //Se elimina la palabra propuesta
+        } else {
+            showRequest(nombre, nombre + " ha perdido");
         }
-       
+
         return resultado.toString();
     }
 
-    private boolean contiene(char[] vectorCharacter, char letra){
+    private boolean contiene(char[] vectorCharacter, char letra) {
         int i = 0;
-        while(i < vectorCharacter.length && vectorCharacter[i] != letra){
+        while (i < vectorCharacter.length && vectorCharacter[i] != letra) {
             i++;
         }
 
         return (i != vectorCharacter.length); // si ha llegado al final, no ha encontrado nada
     }
 
-    public boolean compruebaPalabra(String intento){
-        if(intento.length() != 5){
+    public boolean compruebaPalabra(String intento) {
+        if (intento.length() != 5) {
             System.out.println("Esa palabra no vale");
         }
         return true;
     }
 
-    private void showRequest(String nombre, String request){
+    private void showRequest(String nombre, String request) {
         System.out.println("(" + nombre + ") " + request);
     }
 
-    private static void showMessage(String msg){
+    private static void showMessage(String msg) {
         System.out.println("(" + "Server" + ") " + msg);
     }
 
-    public static void main(String[] args){
-        String nombreServidor= args[0]; //Se guarda el nombre
-
-        try{
-            Naming.bind("//localhost:1099/"+nombreServidor,new Server(nombreServidor));
+    public static void main(String[] args) {
+        String nombreServidor = args[0]; // Se guarda el nombre
+        try {
+            Server tsv = new Server(nombreServidor);
+            Thread hilo = new Thread(tsv, "Timer");
+            hilo.start();
+            // hilo.join(); //NECESARIO?
+            Naming.bind("//localhost:1099/" + nombreServidor, new Server(nombreServidor));
             showMessage("Server ready");
-        }catch(AlreadyBoundException abe){
+        } catch (AlreadyBoundException abe) {
             System.out.println("Server Name already at board");
-        }catch(MalformedURLException mue){
+        } catch (MalformedURLException mue) {
             System.out.println("Malformed URL");
-        }catch(RemoteException re){
+        } catch (RemoteException re) {
             System.out.println("Host unreachable");
-        }
+        } // catch (InterruptedException e) {
+          // e.printStackTrace();
+          // }
     }
 
     @Override
     public String noJuega(String name) throws RemoteException {
-        showMessage("El jugador "+name+" no quiere seguir jugando");
+        showMessage("El jugador " + name + " no quiere seguir jugando");
         return "De acuerdo";
     }
+
+    private void asociarPalabra(){ //Actualiza las palabras propuestas para los jugadores sin palabras
+        Set<String> nombres=palabraCorrespondeJugador.keySet();
+        for(String nombreJugador : nombres){
+            if(palabraCorrespondeJugador.get(nombreJugador).equals(null)){
+                palabraCorrespondeJugador.put(nombreJugador,palabraPropuesta);
+            }
+        }
+    } 
 }
