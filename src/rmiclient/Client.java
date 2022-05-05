@@ -28,7 +28,25 @@ public class Client{
         System.out.println("(" + "Console" + ") " + msg);
     }
 
+    static String comprobarSolucion(String palabraSend, String respuesta) { // VVGVV
+        StringBuilder resultado = new StringBuilder();
 
+        for (int i = 0; i < respuesta.length(); i++) {
+            switch (respuesta.charAt(i)) {
+                case 'G':
+                    resultado.append(
+                            palabraSend.toUpperCase().charAt(i) + " no esta presente en la palabra propuesta\n");
+                    break;
+                case 'A':
+                    resultado.append(palabraSend.toUpperCase().charAt(i) + " esta presente pero no en esa posicion\n");
+                    break;
+                case 'V':
+                    resultado.append(palabraSend.toUpperCase().charAt(i) + " esta presente en esa posicion\n");
+                    break;
+            }
+        }
+        return resultado.toString();
+    }
     
     /*
      __  __   _   ___ _  _ 
@@ -125,7 +143,7 @@ public class Client{
             }while(palabra.length() != 5);
 
             try{
-               String response = objetoRemoto.play(nombre,palabra);
+               String response = comprobarSolucion(palabra,objetoRemoto.play(nombre,palabra));
                System.out.println(response);
             }catch(RemoteException re){
                 System.out.println("Error remoto.");
