@@ -28,22 +28,25 @@ public class Client{
         System.out.println("(" + "Console" + ") " + msg);
     }
 
-    static String comprobarSolucion(String palabraSend, String respuesta) { // VVGVV
+    private String visualizar(String palabraSend, String respuesta) { // VVGVV
         StringBuilder resultado = new StringBuilder();
 
         for (int i = 0; i < respuesta.length(); i++) {
             switch (respuesta.charAt(i)) {
                 case 'G':
-                    resultado.append(
-                            palabraSend.toUpperCase().charAt(i) + " no esta presente en la palabra propuesta\n");
+                    resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" inexistente\n");
                     break;
                 case 'A':
-                    resultado.append(palabraSend.toUpperCase().charAt(i) + " esta presente pero no en esa posicion\n");
+                    resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" desordenada\n");
                     break;
                 case 'V':
-                    resultado.append(palabraSend.toUpperCase().charAt(i) + " esta presente en esa posicion\n");
+                    resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" correcta\n");
                     break;
             }
+        }
+        if(esCorrecta(respuesta)){
+            resultado = new StringBuilder();
+            resultado.append("La palabra es correcta. Has ganado.");
         }
         return resultado.toString();
     }
@@ -63,9 +66,9 @@ public class Client{
 
             seleccionOpcion(objetoRemoto);
 
-        } catch (NotBoundException nbe) {
+        } catch (NotBoundException nbe){
             System.out.println("El servidor al que intentas conectarte no existe");
-        } catch (RemoteException re) {
+        } catch (RemoteException re){
             System.out.println("Host unreachable");
         }
         
@@ -134,27 +137,39 @@ public class Client{
     /* Funcion en la que se realizaran los distintos intentos de palabras */
     private void bucleIntentosPalabras(Wordle objetoRemoto){
         numIntentos = 0;
+        boolean acierto = false;
 
-        while(numIntentos < 6){
+        while(numIntentos < 5 && !acierto){ // 0-4, 5 intentos
 
             String palabra;
             do{
                 palabra = leerCadena("Ingrese nueva palabra (5 letras): ");
-            }while(palabra.length() != 5);
+            }while(palabra.length() != 5); // comprobamos palabra tenga 5 letras
 
             try{
-               String response = comprobarSolucion(palabra,objetoRemoto.play(nombre,palabra));
-               System.out.println(response);
+               String respuestaServidor = objetoRemoto.play(nombre,palabra);
+               String mostrarPantalla = visualizar(palabra,respuestaServidor);
+               System.out.println(mostrarPantalla);
+
+               if(!esCorrecta(respuestaServidor)){
+                   numIntentos++;
+               }else{
+                   acierto = true;
+               }
             }catch(RemoteException re){
                 System.out.println("Error remoto.");
             }
 
             StringBuilder toret = new StringBuilder();
-            toret.append("Intentos: ").append(++numIntentos);
+            toret.append("Intentos: ").append(numIntentos);
             System.out.println(toret.toString());
         }
         System.out.println("---------------------------------\n");
         System.out.println("\n");
+    }
+
+    private boolean esCorrecta(String respuesta){
+        return(respuesta.equals("VVVVV"));
     }
 
 
