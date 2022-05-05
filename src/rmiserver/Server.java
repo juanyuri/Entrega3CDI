@@ -115,6 +115,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     @Override
     public String iniciarPartida(String nombre) throws RemoteException {
         //resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
+        showMessage("El usuario "+ nombre +" ha entrado en el servidor");
         try {
             jugadoresActuales.put(nombre, getClientHost());
             mapaJugadorPalabra.put(nombre, palabraPropuesta); // Escoge una palabra y la asocia al jugador
