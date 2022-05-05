@@ -11,66 +11,101 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Random;
 
 import rmiinterface.Wordle;
 
 public class Server extends UnicastRemoteObject implements Wordle, Runnable {
-
     String nombreServidor;
     int numeroJugadores;
 
-    String palabraPropuesta; //Palabra que tienen en cada momento
+    String palabraPropuesta;
+    String nuevaPalabra;
     String palabraIntento;
-    String posiblesPropuestas[];
-    Map<String, String> jugadoresActuales; //Nombre e IP
+    
     int capacidadVector;
     ArrayList<String> palabrasProhibidas;
-    char[] letrasAbecedario;
-    static Map<Character, List<String>> mapaPalabrasPosibles;
-    static Map<String, String> palabraCorrespondeJugador; //Nombre y Palabra
+    ArrayList<String> palabrasPropuestas;
 
-    public Server(String nombreServidor) throws RemoteException {
+    
+
+    Random rand = new Random();
+
+    //char[] letrasAbecedario;
+    //static Map<Character,List<String>> mapaPalabrasPosibles;
+
+    static Map<String,String> mapaJugadorPalabra;
+    Map<String,String> jugadoresActuales;
+
+    public Server(String nombreServidor) throws RemoteException{
         this.nombreServidor = nombreServidor;
         this.numeroJugadores = 0;
-        this.capacidadVector = 20;
-        this.posiblesPropuestas = new String[] { "HOJAS", "CASAS", "RELAX", "ACOTA", "AGUDO", "GRAVE",
-                "SOLAR", "SALIR", "ABETO", "MATES", "MATON", "LUNES",
-                "AGUAS", "ODIAR", "COMER", "BEBER", "FUMAR", "FUTIL",
-                "PERRO", "GATOS", "LOROS", "CACOS", "CAJON", "TORTA" };
-        this.palabraPropuesta = posiblesPropuestas[(int) (Math.random() * (capacidadVector - 1) + 1)]; // Crea una palabra para todos
+        this.nuevaPalabra = "";
+        this.capacidadVector = 4;
+        this.palabrasPropuestas = addValuesToList();
+        this.palabraPropuesta = palabrasPropuestas.get(rand.nextInt(palabrasPropuestas.size()));
+        System.out.println("La palabra propuesta inicial es: " + palabraPropuesta);
         this.palabrasProhibidas = new ArrayList<String>(capacidadVector);
-        palabrasProhibidas.add(palabraPropuesta);
-        jugadoresActuales = new HashMap<>();
-        palabraCorrespondeJugador = new HashMap<>();
-        letrasAbecedario = new char[] { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+        jugadoresActuales= new HashMap<>();
+        mapaJugadorPalabra= new HashMap<>();
+        //letrasAbecedario= new char[]{'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
     }
+
+    public String getPalabraPropuesta(){
+        return this.palabraPropuesta;
+    }
+
+    private ArrayList<String> addValuesToList(){
+        ArrayList<String> lista = new ArrayList<String>();
+
+        lista.add("HOJAS"); lista.add("CASAS");
+        lista.add("RELAX");lista.add("ACOTA");
+        lista.add("AGUDO");lista.add("GRAVE");
+        lista.add("SOLAR"); lista.add("SALIR");
+        lista.add("ABETO");lista.add("MATES");
+        lista.add("AGUAS");lista.add("MATON");
+
+        lista.add("LUNES");lista.add("ODIAR");
+        lista.add("COMER");lista.add("BEBER");
+        lista.add("FUMAR");lista.add("FUTIL");
+        lista.add("PERRO");lista.add("GATOS");
+        lista.add("LOROS");lista.add("CACOS");
+        lista.add("CAJON");lista.add("TORTA");
+
+        return lista;
+    }
+
 
     @Override
     public void run() { // Hilo que cambia la palabra
-        System.out.println("la palabra actual es"+palabraPropuesta);
-        while (true) {
-            try {
-                Thread.sleep(15000); // Duerme 5 minutos 300000
-                System.out.println("Me he despertado");
-                palabraPropuesta = posiblesPropuestas[(int) (Math.random() * (capacidadVector - 1) + 1)]; // Crea nueva palabra
-                if (palabrasProhibidas.contains(palabraPropuesta)) {
-                    palabraPropuesta = posiblesPropuestas[(int) (Math.random() * (capacidadVector - 1) + 1)]; // Crea nueva palabra si ya está en la de prohibidas
-                } else {
-                    palabrasProhibidas.add(palabraPropuesta); // Sino la añade a la lista de prohibidas
-                }
-                System.out.println("La nueva palabra es " + palabraPropuesta);
-                System.out.println("Lista prohibidas"+palabrasProhibidas);
+        while(true){
+            try{
+                Thread.sleep(10000);
                 
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                this.nuevaPalabra = palabrasPropuestas.get(rand.nextInt(palabrasPropuestas.size()));
+                
+                do{
+                    nuevaPalabra = palabrasPropuestas.get(rand.nextInt(palabrasPropuestas.size()));
+                }while(palabrasProhibidas.contains(nuevaPalabra));
+                
+                System.out.println("Intento de palabra: " + nuevaPalabra);
+
+                palabraPropuesta = nuevaPalabra;
+                palabrasProhibidas.add(palabraPropuesta);
+
+                //System.out.println(palabraPropuesta);
+
+            }catch(InterruptedException ie){
+                ie.printStackTrace();
             }
+            
+            System.out.println(palabrasProhibidas);
         }
     }
 
     public void resetPart(String nombre) {
         jugadoresActuales.remove(nombre); // Eliminamos el registro del jugador
-        palabraCorrespondeJugador.remove(nombre); // Eliminamos alguna palabra que quede suelta
+        mapaJugadorPalabra.remove(nombre); // Eliminamos alguna palabra que quede suelta
         if (numeroJugadores != 0) {
             numeroJugadores--;
         }
@@ -79,23 +114,25 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
 
     @Override
     public String iniciarPartida(String nombre) throws RemoteException {
-        resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
+        //resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
         try {
             jugadoresActuales.put(nombre, getClientHost());
-            palabraCorrespondeJugador.put(nombre, palabraPropuesta); // Escoge una palabra y la asocia al jugador
+            mapaJugadorPalabra.put(nombre, palabraPropuesta); // Escoge una palabra y la asocia al jugador
             numeroJugadores++;
+
+            System.out.println(mapaJugadorPalabra);
 
         } catch (ServerNotActiveException e) {
             e.printStackTrace();
         }
-        showMessage("Se ha asociado la palabra " + palabraCorrespondeJugador.get(nombre) + " al jugador " + nombre);
+        showMessage("Se ha asociado la palabra " + mapaJugadorPalabra.get(nombre) + " al jugador " + nombre);
         return "De acuerdo, " + nombre + " puedes empezar a jugar";
     }
 
     public String play(String nombre, String intento) throws RemoteException {
         String peticion = "intento jugar con " + intento;
         intento = intento.toUpperCase();
-        String palabraCorrespondiente = palabraCorrespondeJugador.get(nombre).toUpperCase();
+        String palabraCorrespondiente = mapaJugadorPalabra.get(nombre).toUpperCase();
         showRequest(nombre, peticion);
 
         StringBuilder resultado = new StringBuilder();
@@ -115,7 +152,9 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
 
         if (resultado.toString().equals("VVVVV")) { // Ha ganado
             showRequest(nombre, nombre + " ha ganado");
-            palabraCorrespondeJugador.put(nombre, null); //Se elimina la palabra propuesta
+            mapaJugadorPalabra.put(nombre, null); //Se elimina la palabra propuesta
+            System.out.println("Hola bo dia," + nombre);
+            System.out.println(mapaJugadorPalabra);
         } else {
             showRequest(nombre, nombre + " ha perdido");
         }
@@ -151,11 +190,12 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         String nombreServidor = args[0]; // Se guarda el nombre
         try {
             Server tsv = new Server(nombreServidor);
+            
+            Naming.bind("//localhost:1099/" + nombreServidor, tsv);
             Thread hilo = new Thread(tsv, "Timer");
             hilo.start();
-            // hilo.join(); //NECESARIO?
-            Naming.bind("//localhost:1099/" + nombreServidor, new Server(nombreServidor));
             showMessage("Server ready");
+
         } catch (AlreadyBoundException abe) {
             System.out.println("Server Name already at board");
         } catch (MalformedURLException mue) {
@@ -174,10 +214,10 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     }
 
     private void asociarPalabra(){ //Actualiza las palabras propuestas para los jugadores sin palabras
-        Set<String> nombres=palabraCorrespondeJugador.keySet();
+        Set<String> nombres=mapaJugadorPalabra.keySet();
         for(String nombreJugador : nombres){
-            if(palabraCorrespondeJugador.get(nombreJugador).equals(null)){
-                palabraCorrespondeJugador.put(nombreJugador,palabraPropuesta);
+            if(mapaJugadorPalabra.get(nombreJugador).equals(null)){
+                mapaJugadorPalabra.put(nombreJugador,palabraPropuesta);
             }
         }
     } 
