@@ -20,26 +20,28 @@ import java.util.Scanner;
 import rmiinterface.Wordle;
 
 public class Server extends UnicastRemoteObject implements Wordle, Runnable {
-    String nombreServidor;
-    int numeroJugadores;
+    String nombreServidor; //Nombre del servidor, se le pasa como parametro
+    int numeroJugadores; //Numero de jugadores actuales
 
-    String palabraPropuesta;
-    String nuevaPalabra;
+    String palabraPropuesta; //Palabra propuesta general, se actualiza cada cierto tiempo
+    String nuevaPalabra; 
     String palabraIntento;
     
     int capacidadVector;
-    ArrayList<String> palabrasProhibidas;
-    ArrayList<String> palabrasPropuestas;
+    ArrayList<String> palabrasProhibidas; //Lista de palabras prohibidas, para que no se puedan volver a jugar en un tiempo
+    ArrayList<String> palabrasPropuestas; //Lista de posibles palabras
 
     
 
     Random rand = new Random();
 
-    char[] letrasAbecedario;
-    Map<Character,List<String>> mapaPalabrasPosibles;
-
-    static Map<String,String> mapaJugadorPalabra;
-    Map<String,String> jugadoresActuales;
+    char[] letrasAbecedario; //Vector de las letras del abecedario, para realizar búsquedas de manera mas eficaz
+    
+    Map<String,Integer> mapaJugadorIntento;             //Almacena los intentos de los jugadores
+    Map<Character,List<String>> mapaPalabrasPosibles;   //Diccionario de palabras
+    Map<String,List<String>> mapaJugadorUsadas;         //Almacena las palabras usadas por un cliente
+    Map<String,String> mapaJugadorPalabra;              //Almacena los jugadores y sus palabras asociadas
+    Map<String,String> jugadoresActuales;               //Lista de jugadores con sus IP
 
     public Server(String nombreServidor) throws RemoteException{
         this.nombreServidor = nombreServidor;
@@ -48,18 +50,26 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         this.capacidadVector = 4;
         this.palabrasPropuestas = addValuesToList();
         this.palabraPropuesta = palabrasPropuestas.get(rand.nextInt(palabrasPropuestas.size()));
-        System.out.println("La palabra propuesta inicial es: " + palabraPropuesta);
+        
         this.palabrasProhibidas = new ArrayList<String>(capacidadVector);
         jugadoresActuales= new HashMap<>();
         mapaJugadorPalabra= new HashMap<>();
+        mapaJugadorIntento= new HashMap<>();
+        this.mapaJugadorUsadas= new HashMap<>();
         letrasAbecedario= new char[]{'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
         
         this.mapaPalabrasPosibles=crearDiccionario(); //Creamos el diccionario
-        System.out.println(mapaPalabrasPosibles);
+        //System.out.println(mapaPalabrasPosibles);
     }
 
     private String getPalabraPropuesta(){
         return this.palabraPropuesta;
+    }
+
+    private void checkProhibidas(){
+        if(palabrasProhibidas.size() >= capacidadVector){//Si la lista de prohibidas es lo suficientemente grande
+            palabrasProhibidas.remove(0);
+        }
     }
 
     private ArrayList<String> addValuesToList(){
@@ -99,6 +109,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
 
                 palabraPropuesta = nuevaPalabra;
                 palabrasProhibidas.add(palabraPropuesta);
+                checkProhibidas(); //Comprueba si ya han pasado las palabras necesarias para sacar una en la lista de prohibidas
 
                 //System.out.println(palabraPropuesta);
 
@@ -113,6 +124,8 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     private void resetPart(String nombre) {
         jugadoresActuales.remove(nombre); // Eliminamos el registro del jugador
         mapaJugadorPalabra.remove(nombre); // Eliminamos alguna palabra que quede suelta
+        mapaJugadorIntento.remove(nombre); //Eliminamos sus intentos
+        mapaJugadorUsadas.remove(nombre); //Eliminamos su lista de palabras
         if (numeroJugadores != 0) {
             numeroJugadores--;
         }
@@ -121,11 +134,13 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
 
     @Override
     public String iniciarConexion(String nombre) throws RemoteException {
-        //resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
+        resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
         showMessage("El usuario "+ nombre +" ha entrado en el servidor");
         try {
             jugadoresActuales.put(nombre, getClientHost());
             mapaJugadorPalabra.put(nombre, palabraPropuesta); // Escoge una palabra y la asocia al jugador
+            mapaJugadorIntento.put(nombre, 0); // Al iniciar conexion se asocia un intento
+            mapaJugadorUsadas.put(nombre,new LinkedList<String>()); //Se inicializa el mapa de palabras usadas por un usuario
             numeroJugadores++;
 
             System.out.println(mapaJugadorPalabra);
@@ -137,9 +152,10 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         return "De acuerdo, " + nombre + " puedes empezar a jugar";
     }
 
-    public String play(String nombre, String intento) throws RemoteException {
+    public String play(String nombre, String intento) throws Exception {
         String peticion = "intento jugar con " + intento;
         intento = intento.toUpperCase();
+        
         String palabraCorrespondiente = mapaJugadorPalabra.get(nombre).toUpperCase();
         showRequest(nombre, peticion);
 
@@ -147,27 +163,63 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         char[] intentoVector = intento.toCharArray();
         char[] propuestaVector = palabraCorrespondiente.toCharArray(); // suponemos minuscula
 
-        for (int i = 0; i < intentoVector.length; i++) {
-            if (intentoVector[i] == propuestaVector[i]) { // Si están en la misma posición
-                resultado.append("V");
-            } else if (contiene(propuestaVector, intentoVector[i])) { // si la propuesta no está en la misma posición,
-                                                                      // pero si en otra
-                resultado.append("A");
-            } else { // si la propuesta no está en la palabra
-                resultado.append("G");
+        if(compruebaPalabra(nombre, intento)){
+
+            int intentoJugador= mapaJugadorIntento.get(nombre); //Recogemos el numero de intento
+            mapaJugadorIntento.put(nombre,intentoJugador+1); //Lo actualizamos
+            mapaJugadorUsadas.get(nombre).add(intento); //Añadimos la palabra usada al mapa del jugador
+
+            System.out.println(mapaJugadorIntento);
+            System.out.println(mapaJugadorUsadas);
+            
+            for (int i = 0; i < intentoVector.length; i++) {
+                if (intentoVector[i] == propuestaVector[i]) { // Si están en la misma posición
+                    resultado.append("V");
+                } else if (contiene(propuestaVector, intentoVector[i])) { // si la propuesta no está en la misma posición,
+                                                                          // pero si en otra
+                    resultado.append("A");
+                } else { // si la propuesta no está en la palabra
+                    resultado.append("G");
+                }
             }
-        }
 
-        if (resultado.toString().equals("VVVVV")) { // Ha ganado
-            showRequest(nombre, nombre + " ha ganado");
-            mapaJugadorPalabra.put(nombre, null); //Se elimina la palabra propuesta
-            System.out.println("Hola bo dia," + nombre);
-            System.out.println(mapaJugadorPalabra);
-        } else {
-            showRequest(nombre, nombre + " ha perdido");
+            if (resultado.toString().equals("VVVVV")) { // Ha ganado
+                showRequest(nombre, nombre + " ha ganado");
+                mapaJugadorPalabra.put(nombre, null); //Se elimina la palabra propuesta
+                //System.out.println("Hola bo dia," + nombre);
+                System.out.println(mapaJugadorPalabra);
+            } else if(mapaJugadorIntento.get(nombre)>=5){ //Si ha fallado hasta el ultimo intento
+                showRequest(nombre, nombre + " ha perdido");
+            }
+        }else{
+            throw new Exception("Esa palabra no es valida");
         }
-
         return resultado.toString();
+    }
+
+    private HashMap<Character,List<String>> crearDiccionario(){
+        //Genera el mapa de palabras posibles
+        HashMap<Character,List<String>> diccionarioPalabras= new HashMap<Character,List<String>>();
+        for(int i=0;i<letrasAbecedario.length;i++){ //Inicializamos claves
+            diccionarioPalabras.put(letrasAbecedario[i], new LinkedList<String>());
+        }
+        try{
+            File doc= new File("..\\src\\5palabras.txt");
+            Scanner obj= new Scanner(doc);
+            while(obj.hasNextLine()){
+                //System.out.println("Puedo sacar un archivo");
+                //System.out.println("He sacado "+obj.next());
+                for(String palabra: obj.nextLine().split(" ")){
+                    //System.out.println(palabra);
+                    char clave= palabra.charAt(0);
+                    diccionarioPalabras.get(clave).add(palabra); //Añadimos las palabras al array
+                }
+            }
+            //System.out.println(diccionarioPalabras);
+            }catch(FileNotFoundException fe){
+                System.out.println("No se ha encontrado el archivo");
+            }
+        return diccionarioPalabras;
     }
 
     private boolean contiene(char[] vectorCharacter, char letra) {
@@ -179,11 +231,13 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         return (i != vectorCharacter.length); // si ha llegado al final, no ha encontrado nada
     }
 
-    private boolean compruebaPalabra(String intento) {
-        if (intento.length() != 5) {
-            System.out.println("Esa palabra no vale");
+    private boolean compruebaPalabra(String nombre, String intento){
+        char letraInicial= intento.charAt(0);
+        if (intento.length() != 5 || !mapaPalabrasPosibles.get(letraInicial).contains(intento) || mapaJugadorUsadas.get(nombre).contains(intento)) { //Si la palabra no tiene 5 letras, no esta presente en el diccionario o ya ha sido usada
+            return false; //No se puede realizar esa jugada
+        }else{
+            return true;
         }
-        return true;
     }
 
     private void showRequest(String nombre, String request) {
@@ -213,39 +267,5 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         } // catch (InterruptedException e) {
           // e.printStackTrace();
           // }
-    }
-
-    private void asociarPalabra(){ //Actualiza las palabras propuestas para los jugadores sin palabras
-        Set<String> nombres=mapaJugadorPalabra.keySet();
-        for(String nombreJugador : nombres){
-            if(mapaJugadorPalabra.get(nombreJugador).equals(null)){
-                mapaJugadorPalabra.put(nombreJugador,palabraPropuesta);
-            }
-        }
-    }
-    
-    private HashMap<Character,List<String>> crearDiccionario(){
-        //Genera el mapa de palabras posibles
-        HashMap<Character,List<String>> diccionarioPalabras= new HashMap<Character,List<String>>();
-        for(int i=0;i<letrasAbecedario.length;i++){ //Inicializamos claves
-            diccionarioPalabras.put(letrasAbecedario[i], new LinkedList<String>());
-        }
-        try{
-            File doc= new File("..\\src\\5palabras.txt");
-            Scanner obj= new Scanner(doc);
-            while(obj.hasNextLine()){
-                System.out.println("Puedo sacar un archivo");
-                //System.out.println("He sacado "+obj.next());
-                for(String palabra: obj.nextLine().split(" ")){
-                    System.out.println(palabra);
-                    char clave= palabra.charAt(0);
-                    diccionarioPalabras.get(clave).add(palabra); //Añadimos las palabras al array
-                }
-            }
-            //System.out.println(diccionarioPalabras);
-            }catch(FileNotFoundException fe){
-                System.out.println("No se ha encontrado el archivo");
-            }
-        return diccionarioPalabras;
     }
 }

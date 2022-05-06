@@ -45,7 +45,7 @@ public class Client{
         }
         if(esCorrecta(respuesta)){
             resultado = new StringBuilder();
-            resultado.append("La palabra es correcta. Has ganado.");
+            resultado.append("La palabra "+palabraSend+"es correcta. Has ganado.");
         }
         return resultado.toString();
     }
@@ -147,7 +147,8 @@ public class Client{
             }while(palabra.length() != 5); // comprobamos palabra tenga 5 letras
 
             try{
-               String respuestaServidor = objetoRemoto.play(nombre,palabra);
+               String respuestaServidor;
+               respuestaServidor = objetoRemoto.play(nombre,palabra);
                String mostrarPantalla = visualizar(palabra,respuestaServidor);
                System.out.println(mostrarPantalla);
 
@@ -158,6 +159,8 @@ public class Client{
                }
             }catch(RemoteException re){
                 System.out.println("Error remoto.");
+            } catch (Exception e) { //Si le llega la excepcion de que ha fallado en la palabra
+                System.out.println("Palabra no valida");
             }
 
             StringBuilder toret = new StringBuilder();
