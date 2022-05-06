@@ -89,7 +89,7 @@ public class Client{
             switch(op) {
                 case 1:
                     try {
-                        String reply = objetoRemoto.iniciarPartida(nombreCliente); // jugador recibe puedes comenzar a jugar
+                        String reply = objetoRemoto.iniciarConexion(nombreCliente); // jugador recibe puedes comenzar a jugar
                         System.out.println("(Server) " + reply);
                     }catch(RemoteException ex){
                         System.out.println("Host unreachable.");
