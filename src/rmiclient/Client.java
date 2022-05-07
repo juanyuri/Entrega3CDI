@@ -9,11 +9,11 @@ import static rmiclient.ES.*;
 import rmiinterface.Wordle;
 
 public class Client{
-    String nombre;
+    String nombreCliente;
     int numIntentos; 
 
-    public Client(String nombre){
-        this.nombre = nombre;
+    public Client(String nombreCliente){
+        this.nombreCliente = nombreCliente;
         this.numIntentos = 0;
     }
 
@@ -30,22 +30,27 @@ public class Client{
     private String visualizar(String palabraSend, String respuesta) { // VVGVV
         StringBuilder resultado = new StringBuilder();
 
-        for (int i = 0; i < respuesta.length(); i++) {
-            switch (respuesta.charAt(i)) {
-                case 'G':
-                    resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" inexistente\n");
-                    break;
-                case 'A':
-                    resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" desordenada\n");
-                    break;
-                case 'V':
-                    resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" correcta\n");
-                    break;
+        if(respuesta.length()==5){
+            for (int i = 0; i < respuesta.length(); i++) {
+                switch (respuesta.charAt(i)) {
+                    case 'G':
+                        resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" inexistente\n");
+                        break;
+                    case 'A':
+                        resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" desordenada\n");
+                        break;
+                    case 'V':
+                        resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" correcta\n");
+                        break;
+                }
             }
+        }else{
+            resultado.setLength(0);
+            resultado.append(respuesta);
         }
         if(esCorrecta(respuesta)){
             resultado = new StringBuilder();
-            resultado.append("La palabra "+palabraSend+"es correcta. Has ganado.");
+            resultado.append("La palabra "+palabraSend+" es correcta. Has ganado.");
         }
         return resultado.toString();
     }
@@ -59,11 +64,16 @@ public class Client{
     */
 
     public static void main(String[] args) {
-        try {
-            Registry reg = LocateRegistry.getRegistry(1099);
-            Wordle objetoRemoto = (Wordle) reg.lookup("MyServer");
+        String nombreCliente= args[0];
+        String nombreServidor= args[1];
+        String ipServidor= args[2]; //Ip tablon registry
+        int portServidor= Integer.parseInt(args[3]); //Puerto registry
 
-            seleccionOpcion(objetoRemoto);
+        try {
+            Registry reg = LocateRegistry.getRegistry(ipServidor,portServidor); //Accede al registry especificado con esa ip y ese puerto
+            Wordle objetoRemoto = (Wordle) reg.lookup(nombreServidor);
+
+            seleccionOpcion(nombreCliente,objetoRemoto);
 
         } catch (NotBoundException nbe){
             System.out.println("El servidor al que intentas conectarte no existe");
@@ -76,9 +86,9 @@ public class Client{
 
 
     /* Permite seleccionar una opcion, primeramente muestra menu, despues usuario elige */
-    public static void seleccionOpcion(Wordle objetoRemoto){
+    public static void seleccionOpcion(String nombreCliente, Wordle objetoRemoto){
         int op;
-        String nombreCliente = leerCadena("Introduce nombre jugador: ");
+        // String nombreCliente = leerCadena("Introduce nombre jugador: ");
         Client cliente = new Client(nombreCliente);
         
 
@@ -117,7 +127,7 @@ public class Client{
         toret.append("  \\ \\/\\/ / (_) \\|   / |) | |__| _| \n");
         toret.append("   \\_/\\_/ \\___/\\|_|_\\___/|____|___|\n");
         toret.append(" \n");
-        toret.append("Jugador: ").append(nombre);
+        toret.append("Jugador: ").append(nombreCliente);
         toret.append("\n");
         toret.append("\nElige una opcion: ");
         toret.append("\n1. Jugar");
@@ -148,21 +158,19 @@ public class Client{
 
             try{
                String respuestaServidor;
-               respuestaServidor = objetoRemoto.play(nombre,palabra);
+               respuestaServidor = objetoRemoto.play(nombreCliente,palabra);
                String mostrarPantalla = visualizar(palabra,respuestaServidor);
                System.out.println(mostrarPantalla);
 
-               if(!esCorrecta(respuestaServidor)){
+               if(!esCorrecta(respuestaServidor) && !mensaje(respuestaServidor)){ //Si no es correcta y no es un mensaje
                    numIntentos++;
-               }else{
+               }else if(esCorrecta(respuestaServidor)){
                    acierto = true;
                }
             }catch(RemoteException re){
                 System.out.println("Error remoto.");
-            } catch (Exception e) { //Si le llega la excepcion de que ha fallado en la palabra
-                System.out.println("Palabra no valida");
             }
-
+            
             StringBuilder toret = new StringBuilder();
             toret.append("Intentos: ").append(numIntentos);
             System.out.println(toret.toString());
@@ -172,8 +180,15 @@ public class Client{
     }
 
     private boolean esCorrecta(String respuesta){
-        return(respuesta.equals("VVVVV"));
+            return (respuesta.equals("VVVVV"));
     }
 
+    private boolean mensaje(String respuesta){
+        if(respuesta.length()>5){
+            return true;
+        }else{
+            return false;
+        }
+    }
 
 }
