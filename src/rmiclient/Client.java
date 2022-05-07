@@ -30,7 +30,7 @@ public class Client{
     private String visualizar(String palabraSend, String respuesta) { // VVGVV
         StringBuilder resultado = new StringBuilder();
 
-        if(respuesta.length()==5){
+        if(respuesta.length() == 5){
             for (int i = 0; i < respuesta.length(); i++) {
                 switch (respuesta.charAt(i)) {
                     case 'G':
@@ -48,6 +48,7 @@ public class Client{
             resultado.setLength(0);
             resultado.append(respuesta);
         }
+
         if(esCorrecta(respuesta)){
             resultado = new StringBuilder();
             resultado.append("La palabra "+palabraSend+" es correcta. Has ganado.");
@@ -90,7 +91,12 @@ public class Client{
         int op;
         // String nombreCliente = leerCadena("Introduce nombre jugador: ");
         Client cliente = new Client(nombreCliente);
-        
+        try {
+            String reply = objetoRemoto.iniciarConexion(nombreCliente); // jugador recibe puedes comenzar a jugar
+            System.out.println("(Server) " + reply);
+        }catch(RemoteException ex){
+            System.out.println("Host unreachable.");
+        }
 
         // BUCLE PRINCIPAL
         do {
@@ -99,13 +105,20 @@ public class Client{
             switch(op) {
                 case 1:
                     try {
-                        String reply = objetoRemoto.iniciarConexion(nombreCliente); // jugador recibe puedes comenzar a jugar
-                        System.out.println("(Server) " + reply);
+                        boolean reply = objetoRemoto.asociarPalabra(nombreCliente); 
+                        System.out.println("(Server) " + "Palabra asociada al jugador " + nombreCliente + " correctamente.");
+
+                        if(reply){ // Si se pudo asociar correctamente la palabra
+                        System.out.println("\n---------------------------------");
+                        cliente.bucleIntentosPalabras(objetoRemoto); // dentro esta el play
+                    }else{
+                        System.out.println("No se ha generado todavia una palabra, espera unos segundos ...");
+                    }
                     }catch(RemoteException ex){
                         System.out.println("Host unreachable.");
-                }
-                    System.out.println("\n---------------------------------");
-                    cliente.bucleIntentosPalabras(objetoRemoto);
+                    }
+                    
+                    
                     break;
             }
             
@@ -149,7 +162,7 @@ public class Client{
         numIntentos = 0;
         boolean acierto = false;
 
-        while(numIntentos < 5 && !acierto){ // 0-4, 5 intentos
+        while(numIntentos < 5 && !acierto){ // 5 intentos
 
             String palabra;
             do{
@@ -164,7 +177,7 @@ public class Client{
 
                if(!esCorrecta(respuestaServidor) && !mensaje(respuestaServidor)){ //Si no es correcta y no es un mensaje
                    numIntentos++;
-               }else if(esCorrecta(respuestaServidor) || (mensaje(respuestaServidor) && respuestaServidor.contains("perdido"))){ //Si ha ganado o perdido
+               }else if(esCorrecta(respuestaServidor) || ((mensaje(respuestaServidor) && respuestaServidor.contains("perdido"))) ){ //Si ha ganado o perdido
                    acierto = true;
                }
             }catch(RemoteException re){
