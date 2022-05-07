@@ -164,7 +164,7 @@ public class Client{
 
                if(!esCorrecta(respuestaServidor) && !mensaje(respuestaServidor)){ //Si no es correcta y no es un mensaje
                    numIntentos++;
-               }else if(esCorrecta(respuestaServidor)){
+               }else if(esCorrecta(respuestaServidor) || (mensaje(respuestaServidor) && respuestaServidor.contains("perdido"))){ //Si ha ganado o perdido
                    acierto = true;
                }
             }catch(RemoteException re){

@@ -130,15 +130,13 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     private void resetPart(String nombre) {
         jugadoresActuales.remove(nombre); // Eliminamos el registro del jugador
         mapaJugadorPalabra.remove(nombre); // Eliminamos alguna palabra que quede suelta
-        if (numeroJugadores != 0) {
-            numeroJugadores--;
-        }
+
         System.out.println("He eliminado la información del jugador " + nombre);
     }
 
     @Override
     public String iniciarConexion(String nombre) throws RemoteException {
-        //resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
+        resetPart(nombre); // Reseteamos posible informacion sobre el jugador que acaba de entrar
         showMessage("El usuario " + nombre + " ha entrado en el servidor");
         try {
             jugadoresActuales.put(nombre, getClientHost());
