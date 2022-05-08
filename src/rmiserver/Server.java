@@ -24,8 +24,8 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     String palabraIntento;
 
     int capacidadVector;
-    ArrayList<String> palabrasProhibidas; // Lista de palabras prohibidas, para que no se puedan volver a jugar en un tiempo
-    ArrayList<String> palabrasPropuestas; // Lista de posibles palabras
+    ArrayList<String> palabrasProhibidas;  
+    ArrayList<String> palabrasPropuestas;  
 
     Random rand = new Random();
              
@@ -81,30 +81,29 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     }
 
     private HashMap<Character, List<String>> crearDiccionario() {
-        // Genera el mapa de palabras posibles
         char[] letrasAbecedario = new char[] { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
 
         HashMap<Character, List<String>> diccionarioPalabras = new HashMap<Character, List<String>>();
-        for (int i = 0; i < letrasAbecedario.length; i++) { // Inicializamos claves
+        for (int i = 0; i < letrasAbecedario.length; i++) {
             diccionarioPalabras.put(letrasAbecedario[i], new LinkedList<String>());
         }
         try {
             File doc = new File("..\\src\\5palabras.txt");
             Scanner obj = new Scanner(doc);
             while (obj.hasNextLine()) {
-                // System.out.println("Puedo sacar un archivo");
-                // System.out.println("He sacado "+obj.next());
+                 
+                 
                 for (String palabra : obj.nextLine().split(" ")) {
-                    // System.out.println(palabra);
+                     
                     char clave = palabra.charAt(0);
-                    diccionarioPalabras.get(clave).add(palabra); // Añadimos las palabras al array
+                    diccionarioPalabras.get(clave).add(palabra);  
                 }
             }
-            // System.out.println(diccionarioPalabras);
+             
         } catch (FileNotFoundException fe) {
             System.out.println("No se ha encontrado el archivo");
         }
-        showMessage("Server inicializado correctamente");
+        //showMessage("Server inicializado correctamente");
         return diccionarioPalabras;
     }    
 
@@ -112,7 +111,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
 
 
     public String iniciarConexion(String nombre) throws RemoteException {
-        showMessage("El usuario " + nombre + " ha entrado en el servidor");
+        //showMessage("El usuario " + nombre + " ha entrado en el servidor");
 
         mapaJugadores.put(nombre, new ServerPlayer());
         numeroJugadores++;
@@ -127,26 +126,26 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         
 
         if(palabraAsociada == null){
-            // Si no tiene palabra asociada
+             
             mapaJugadores.get(nombre).setPalabraAsociada(palabraPropuesta);
 
-            showMessage("Palabra asociada al jugador(antes vacia) " + nombre + ": " + mapaJugadores.get(nombre).getPalabraAsociada());
+            ////showMessage("Palabra asociada al jugador(antes vacia) " + nombre + ": " + mapaJugadores.get(nombre).getPalabraAsociada());
             visualizarJugadores();
             mapaJugadores.get(nombre).setNumIntentos(0);
             mapaJugadores.get(nombre).setJugando(true);
             return true;
-        }else if(mapaJugadores.get(nombre).getPalabraAsociada().equals(palabraPropuesta) && !estaJugando){ // si ha ganado ha terminado de jugar
-            // Si ha jugado la partida y la palabra propuesta sigue siendo la misma
+        }else if(mapaJugadores.get(nombre).getPalabraAsociada().equals(palabraPropuesta) && !estaJugando){  
+             
             visualizarJugadores();
             return false;
         }else if(mapaJugadores.get(nombre).getPalabraAsociada().equals(palabraPropuesta) && estaJugando){
-            // Si esta jugando
+             
             visualizarJugadores();
             return false;
         }else if(!mapaJugadores.get(nombre).getPalabraAsociada().equals(palabraPropuesta) && !estaJugando){
-            // Si la palabra propuesta no es la misma y ha terminado de jugar
+             
             mapaJugadores.get(nombre).setPalabraAsociada(palabraPropuesta);
-            showMessage("Palabra asociada al jugador(ya generada nueva) " + nombre + ": " + mapaJugadores.get(nombre).getPalabraAsociada());
+            ////showMessage("Palabra asociada al jugador(ya generada nueva) " + nombre + ": " + mapaJugadores.get(nombre).getPalabraAsociada());
             visualizarJugadores();
             mapaJugadores.get(nombre).setNumIntentos(0);
             mapaJugadores.get(nombre).setJugando(true);
@@ -161,23 +160,23 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         mapaJugadores.get(nombre).setJugando(true);
 
         intento = intento.toUpperCase();
-        showMessage("El jugador " + nombre + " ha intentado jugar con: " + intento);
+        //showMessage("El jugador " + nombre + " ha intentado jugar con: " + intento);
 
         String palabraCorrespondiente = mapaJugadores.get(nombre).getPalabraAsociada().toUpperCase();
             
             String resultado;
 
             if(comprobarPalabra(nombre,intento)){
-                mapaJugadores.get(nombre).aumentarIntento(); // numIntentos++
-                showMessage("El jugador "+nombre+" lleva "+mapaJugadores.get(nombre).getNumIntentos()+" intentos");
+                mapaJugadores.get(nombre).aumentarIntento();  
+                //showMessage("El jugador "+nombre+" lleva "+mapaJugadores.get(nombre).getNumIntentos()+" intentos");
                 resultado = generarResultado(intento,palabraCorrespondiente);
 
-                if(resultado.equals("VVVVV")) { // Ha ganado
-                    showMessage("El jugador " + nombre + " ha ganado");
+                if(resultado.equals("VVVVV")) {  
+                    //showMessage("El jugador " + nombre + " ha ganado");
                     mapaJugadores.get(nombre).setJugando(false);
-                    //visualizarJugadores();
+                     
                 }else if(mapaJugadores.get(nombre).getNumIntentos() >= 5){
-                    showMessage("El jugador " + nombre + " ha perdido");
+                    //showMessage("El jugador " + nombre + " ha perdido");
                     mapaJugadores.get(nombre).setJugando(false);
                     
                     resultado = "Has perdido, la palabra correcta era "+ mapaJugadores.get(nombre).getPalabraAsociada();
@@ -191,12 +190,8 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     }
 
     
-
-
-    
-
     public static void main(String[] args) {
-        String nombreServidor = args[0]; // Se guarda el nombre
+        String nombreServidor = args[0];  
         String ipServidor= args[1];
         int puertoServidor= Integer.parseInt(args[2]);
         try {
@@ -216,7 +211,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     }
 
     @Override
-    public void run() { // Hilo que cambia la palabra
+    public void run() {  
         while (true) {
             try {
                 Thread.sleep(25000);
@@ -227,7 +222,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
 
                 System.out.println("(" + "Server" + ") " + "Palabra propuesta nueva: " + palabraPropuesta);
                 palabrasProhibidas.add(palabraPropuesta);
-                checkProhibidas(); // Comprueba si ya han pasado las palabras necesarias para sacar una en la lista de prohibidas
+                checkProhibidas();  
 
             } catch (InterruptedException ie) {
                 ie.printStackTrace();
@@ -236,11 +231,6 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     }
     
 
-
-
-
-
-
     /* COMPROBACIONES */
     private boolean contiene(char[] vectorCharacter, char letra) {
         int i = 0;
@@ -248,13 +238,13 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
             i++;
         }
 
-        return (i != vectorCharacter.length); // si ha llegado al final, no ha encontrado nada
+        return (i != vectorCharacter.length);  
     }
 
     private boolean comprobarPalabra(String nombre, String intento) {
         char letraInicial = intento.charAt(0);
-        if (intento.length() != 5 || !mapaPalabrasPosibles.get(letraInicial).contains(intento)) { // Si la palabra no tiene 5 letras, no esta
-            return false; // No se puede realizar esa jugada
+        if (intento.length() != 5 || !mapaPalabrasPosibles.get(letraInicial).contains(intento)) {  
+            return false;  
         } else {
             return true;
         }
@@ -269,29 +259,22 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     public String generarResultado(String intento, String palabraCorrespondiente){
         StringBuilder resultado = new StringBuilder();
         char[] intentoVector = intento.toCharArray();
-        char[] propuestaVector = palabraCorrespondiente.toCharArray(); // suponemos minuscula
+        char[] propuestaVector = palabraCorrespondiente.toCharArray();  
 
         for (int i = 0; i < intentoVector.length; i++) {
             if (intentoVector[i] == propuestaVector[i]) { 
-                // misma posición(correcta)
+                 
                 resultado.append("V");
             } else if (contiene(propuestaVector, intentoVector[i])) { 
-                // distinta posición pero está contenida
+                 
                 resultado.append("A");
             } else { 
-                // no están en la palabra
+                 
                 resultado.append("G");
             }
         }
         return resultado.toString();
     }
-
-
-
-
-
-
-
 
 
     /* SALIDA - OUTPUT */
@@ -310,6 +293,6 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         }
         toret.append(" ]");
 
-        System.out.println(toret.toString());
+        //System.out.println(toret.toString());
     }
 }

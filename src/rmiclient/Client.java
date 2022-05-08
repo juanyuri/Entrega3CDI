@@ -27,29 +27,30 @@ public class Client{
         System.out.println("(" + "Console" + ") " + msg);
     }
 
+    /** Método que traduce el código dado por el servidor en información entendible por el usuario */
     private String visualizar(String palabraSend, String respuesta) { // VVGVV
         StringBuilder resultado = new StringBuilder();
 
         if(respuesta.length() == 5){
             for (int i = 0; i < respuesta.length(); i++) {
                 switch (respuesta.charAt(i)) {
-                    case 'G':
+                    case 'G': //Si la letra no está
                         resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" inexistente\n");
                         break;
-                    case 'A':
+                    case 'A': //Si la letra no está en la pos correcta
                         resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" desordenada\n");
                         break;
-                    case 'V':
+                    case 'V': //Si la letra está bien posicionada
                         resultado.append(" -->  ").append(palabraSend.toUpperCase().charAt(i)).append(" correcta\n");
                         break;
                 }
             }
         }else{
-            resultado.setLength(0);
-            resultado.append(respuesta);
+            resultado.setLength(0); 
+            resultado.append(respuesta); //Si en lugar de un código se envía un mensaje
         }
 
-        if(esCorrecta(respuesta)){
+        if(esCorrecta(respuesta)){ //Si llega un VVVVV, ha ganada
             resultado = new StringBuilder();
             resultado.append("La palabra "+palabraSend.toUpperCase()+" es correcta. Has ganado.");
         }
@@ -65,8 +66,8 @@ public class Client{
     */
 
     public static void main(String[] args) {
-        String nombreCliente= args[0];
-        String nombreServidor= args[1];
+        String nombreCliente= args[0]; //Nombre del cliente
+        String nombreServidor= args[1]; //Nombre al que quiere conectarse
         String ipServidor= args[2]; //Ip tablon registry
         int portServidor= Integer.parseInt(args[3]); //Puerto registry
 
@@ -74,7 +75,7 @@ public class Client{
             Registry reg = LocateRegistry.getRegistry(ipServidor,portServidor); //Accede al registry especificado con esa ip y ese puerto
             Wordle objetoRemoto = (Wordle) reg.lookup(nombreServidor);
 
-            seleccionOpcion(nombreCliente,objetoRemoto);
+            seleccionOpcion(nombreCliente,objetoRemoto); 
 
         } catch (NotBoundException nbe){
             System.out.println("El servidor al que intentas conectarte no existe");
@@ -89,7 +90,7 @@ public class Client{
     /* Permite seleccionar una opcion, primeramente muestra menu, despues usuario elige */
     public static void seleccionOpcion(String nombreCliente, Wordle objetoRemoto){
         int op;
-        // String nombreCliente = leerCadena("Introduce nombre jugador: ");
+        
         Client cliente = new Client(nombreCliente);
         try {
             String reply = objetoRemoto.iniciarConexion(nombreCliente); // jugador recibe puedes comenzar a jugar
@@ -192,10 +193,12 @@ public class Client{
         System.out.println("\n");
     }
 
+    /** Comprueba si la palabra es correcta */
     private boolean esCorrecta(String respuesta){
             return (respuesta.equals("VVVVV"));
     }
 
+    /** Comprueba si la respuesta del servidor es un mensaje */
     private boolean mensaje(String respuesta){
         if(respuesta.length()>5){
             return true;
