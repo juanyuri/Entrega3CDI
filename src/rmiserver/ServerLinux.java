@@ -16,7 +16,7 @@ import java.util.Scanner;
 
 import rmiinterface.Wordle;
 
-public class Server extends UnicastRemoteObject implements Wordle, Runnable {
+public class ServerLinux extends UnicastRemoteObject implements Wordle, Runnable {
     String nombreServidor; 
     int numeroJugadores; 
 
@@ -33,7 +33,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
     HashMap<Character, List<String>> mapaPalabrasPosibles;
 
 
-    public Server(String nombreServidor) throws RemoteException {
+    public ServerLinux(String nombreServidor) throws RemoteException {
         this.nombreServidor = nombreServidor;
         this.numeroJugadores = 0;
         this.capacidadVector = 4;
@@ -89,7 +89,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
             diccionarioPalabras.put(letrasAbecedario[i], new LinkedList<String>());
         }
         try {
-            File doc = new File("..\\src\\5palabras.txt");
+            File doc = new File("./5palabras.txt");
             Scanner obj = new Scanner(doc);
             while (obj.hasNextLine()) {
                 // System.out.println("Puedo sacar un archivo");
@@ -200,7 +200,7 @@ public class Server extends UnicastRemoteObject implements Wordle, Runnable {
         String ipServidor= args[1];
         int puertoServidor= Integer.parseInt(args[2]);
         try {
-            Server tsv = new Server(nombreServidor);
+            ServerLinux tsv = new ServerLinux(nombreServidor);
 
             Naming.bind("//"+ipServidor+":"+puertoServidor+"/" + nombreServidor, tsv);
             Thread hilo = new Thread(tsv, "Timer");

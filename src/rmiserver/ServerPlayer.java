@@ -23,7 +23,6 @@ public class ServerPlayer{
         return this.jugando;
     }
 
-
     public void setNumIntentos(int nuevoNumIntentos){
         this.numIntentos = nuevoNumIntentos;
     }

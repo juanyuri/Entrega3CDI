@@ -51,7 +51,7 @@ public class Client{
 
         if(esCorrecta(respuesta)){
             resultado = new StringBuilder();
-            resultado.append("La palabra "+palabraSend+" es correcta. Has ganado.");
+            resultado.append("La palabra "+palabraSend.toUpperCase()+" es correcta. Has ganado.");
         }
         return resultado.toString();
     }
